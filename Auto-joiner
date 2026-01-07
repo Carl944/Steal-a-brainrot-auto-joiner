@@ -3,18 +3,22 @@
     By Sammy (SpyderSammy) - Official Game Support
     
     Features:
-    - Automatically scans public servers for high-income players
-    - FILTERS servers to show ONLY Steal-a-Brainrot game servers
-    - Joins servers with income >= threshold (default 100M/s)
+    - Automatically scans public servers using Roblox API
+    - FILTERS servers to show ONLY servers from the configured Place ID
+    - Joins servers based on player count (income detection requires joining)
     - Filters by player count to avoid crowded servers
     - ESP highlights ONLY the highest value Brainrot on server
     - Modern neon black UI with purple accents
-    - Adjustable minimum income threshold
+    - Configurable Place ID (IMPORTANT: must be correct!)
     - Toggle on/off functionality
-    - Brainrot name filtering (whitelist/blacklist support)
     
-    Game ID: 109983668079237 (Official Sammy's Steal a Brainrot)
-    Usage: Execute this script in Roblox
+    IMPORTANT: 
+    - Verify Place ID in Settings if you see wrong game servers!
+    - Income and brainrots cannot be detected from API (requires joining server)
+    - The script shows all public servers for the configured Place ID
+    
+    Default Place ID: 109983668079237
+    Usage: Execute this script in Roblox, verify Place ID in Settings
 ]]
 
 local Players = game:GetService("Players")
@@ -652,6 +656,64 @@ local function createUI()
     playerInputCorner.CornerRadius = UDim.new(0, 8)
     playerInputCorner.Parent = playerInput
 
+    -- Place ID Setting (CRITICAL for fixing wrong game issue)
+    local placeIdCard = Instance.new("Frame")
+    placeIdCard.Size = UDim2.new(1, 0, 0, 120)
+    placeIdCard.Position = UDim2.new(0, 0, 0, 350)
+    placeIdCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    placeIdCard.BorderSizePixel = 0
+    placeIdCard.Parent = settingsContent
+
+    local placeIdCorner = Instance.new("UICorner")
+    placeIdCorner.CornerRadius = UDim.new(0, 10)
+    placeIdCorner.Parent = placeIdCard
+
+    local placeIdStroke = Instance.new("UIStroke")
+    placeIdStroke.Color = Color3.fromRGB(255, 0, 0) -- Red to indicate importance
+    placeIdStroke.Thickness = 2
+    placeIdStroke.Parent = placeIdCard
+
+    local placeIdTitle = Instance.new("TextLabel")
+    placeIdTitle.Size = UDim2.new(1, -20, 0, 25)
+    placeIdTitle.Position = UDim2.new(0, 10, 0, 10)
+    placeIdTitle.BackgroundTransparency = 1
+    placeIdTitle.Text = "🎮 Game Place ID (IMPORTANT!)"
+    placeIdTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+    placeIdTitle.TextSize = 16
+    placeIdTitle.Font = Enum.Font.GothamBold
+    placeIdTitle.TextXAlignment = Enum.TextXAlignment.Left
+    placeIdTitle.Parent = placeIdCard
+
+    local placeIdInput = Instance.new("TextBox")
+    placeIdInput.Size = UDim2.new(1, -20, 0, 35)
+    placeIdInput.Position = UDim2.new(0, 10, 0, 45)
+    placeIdInput.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    placeIdInput.Text = tostring(Config.PlaceId)
+    placeIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    placeIdInput.TextSize = 14
+    placeIdInput.Font = Enum.Font.Gotham
+    placeIdInput.PlaceholderText = "Enter correct Steal-a-Brainrot Place ID"
+    placeIdInput.ClearTextOnFocus = false
+    placeIdInput.BorderSizePixel = 0
+    placeIdInput.Parent = placeIdCard
+    UIElements.PlaceIdInput = placeIdInput
+
+    local placeIdInputCorner = Instance.new("UICorner")
+    placeIdInputCorner.CornerRadius = UDim.new(0, 8)
+    placeIdInputCorner.Parent = placeIdInput
+
+    local placeIdDesc = Instance.new("TextLabel")
+    placeIdDesc.Size = UDim2.new(1, -20, 0, 30)
+    placeIdDesc.Position = UDim2.new(0, 10, 0, 85)
+    placeIdDesc.BackgroundTransparency = 1
+    placeIdDesc.Text = "If seeing wrong game servers, verify this Place ID!"
+    placeIdDesc.TextColor3 = Color3.fromRGB(255, 200, 200)
+    placeIdDesc.TextSize = 11
+    placeIdDesc.Font = Enum.Font.Gotham
+    placeIdDesc.TextXAlignment = Enum.TextXAlignment.Left
+    placeIdDesc.TextWrapped = true
+    placeIdDesc.Parent = placeIdCard
+
     -- ESP Tab Content
     local espContent = Instance.new("Frame")
     espContent.Name = "ESPContent"
@@ -854,8 +916,10 @@ local function updateServerListDisplay()
         incomeLabel.Size = UDim2.new(1, -20, 0, 16)
         incomeLabel.Position = UDim2.new(0, 10, 0, 25)
         incomeLabel.BackgroundTransparency = 1
-        incomeLabel.Text = "💰 Income: " .. formatNumber(server.income) .. "/s"
-        incomeLabel.TextColor3 = Color3.fromRGB(50, 205, 50)
+        -- Show "Unknown" if income is 0 (can't detect from API)
+        local incomeText = server.income > 0 and ("💰 Income: " .. formatNumber(server.income) .. "/s") or "💰 Income: Unknown (join to check)"
+        incomeLabel.Text = incomeText
+        incomeLabel.TextColor3 = server.income > 0 and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(150, 150, 150)
         incomeLabel.TextSize = 12
         incomeLabel.Font = Enum.Font.Gotham
         incomeLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -881,10 +945,10 @@ local function updateServerListDisplay()
         if server.brainrots and #server.brainrots > 0 then
             brainrotText = brainrotText .. table.concat(server.brainrots, ", ")
         else
-            brainrotText = brainrotText .. "None"
+            brainrotText = brainrotText .. "Unknown (join to check)"
         end
         brainrotLabel.Text = brainrotText
-        brainrotLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+        brainrotLabel.TextColor3 = (server.brainrots and #server.brainrots > 0) and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(150, 150, 150)
         brainrotLabel.TextSize = 11
         brainrotLabel.Font = Enum.Font.Gotham
         brainrotLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1128,80 +1192,37 @@ local function scanServers()
         local scannedCount = 0
         local foundCount = 0
 
-        -- Try to fetch real servers first
+        -- Fetch ONLY real servers from Roblox API - no simulated data
         local realServers = fetchRealServers()
-        local useRealData = #realServers > 0
 
-        if useRealData then
-            createNotification("Auto-Joiner", "Scanning Steal-a-Brainrot servers...", 2)
-        else
-            createNotification("Auto-Joiner", "Using simulated data (API unavailable)...", 2)
+        if #realServers == 0 then
+            -- API failed - show error and stop
+            createNotification("Error", "Failed to fetch servers. Check Place ID: " .. Config.PlaceId, 5)
+            createNotification("Help", "Make sure you're using the correct Place ID for Steal-a-Brainrot!", 5)
+            IsScanning = false
+            return
         end
 
-        -- List of possible Brainrots in the game
-        local possibleBrainrots = {
-            "Skibidi", "Grimace", "Cameraman", "Ohio", "Rizz",
-            "Sigma", "Gyatt", "Mewing", "Fanum", "Smurf Cat",
-            "Rizz God", "Sigma Male", "Gigachad", "Beta"
-        }
+        createNotification("Auto-Joiner", "Found " .. #realServers .. " servers for Place ID " .. Config.PlaceId, 3)
 
-        local maxToScan = useRealData and math.min(#realServers, Config.MaxServersToScan) or Config.MaxServersToScan
-
-        for i = 1, maxToScan do
-            task.wait(0.1) -- Rate limiting
+        -- Process ONLY the real servers from the API
+        for i, serverData in ipairs(realServers) do
+            task.wait(0.05) -- Rate limiting
 
             scannedCount = scannedCount + 1
 
-            local serverData
-            if useRealData and realServers[i] then
-                -- Use real server data
-                serverData = realServers[i]
-
-                -- Simulate income and brainrots (since we can't get this from API directly)
-                -- In real implementation, you'd need to actually join briefly or use game-specific detection
-                serverData.income = math.random(50000000, 500000000)
-                serverData.isPublic = true
-
-                -- Generate random Brainrots for the server (from valid game brainrots)
-                local brainrotCount = math.random(1, 4)
-                serverData.brainrots = {}
-                for j = 1, brainrotCount do
-                    local randomBrainrot = possibleBrainrots[math.random(1, #possibleBrainrots)]
-                    if not table.find(serverData.brainrots, randomBrainrot) then
-                        table.insert(serverData.brainrots, randomBrainrot)
-                    end
-                end
-            else
-                -- Fallback to simulated data
-                local fakeIncome = math.random(50000000, 500000000)
-                local fakePlayers = math.random(1, 12)
-                local isPublic = true -- Always public now
-
-                -- Generate random Brainrots for the server
-                local brainrotCount = math.random(1, 4)
-                local serverBrainrots = {}
-                for j = 1, brainrotCount do
-                    local randomBrainrot = possibleBrainrots[math.random(1, #possibleBrainrots)]
-                    if not table.find(serverBrainrots, randomBrainrot) then
-                        table.insert(serverBrainrots, randomBrainrot)
-                    end
-                end
-
-                serverData = {
-                    jobId = "server-" .. HttpService:GenerateGUID(false),
-                    income = fakeIncome,
-                    players = fakePlayers,
-                    maxPlayers = 12,
-                    isPublic = isPublic,
-                    brainrots = serverBrainrots
-                }
-            end
-
-            -- Apply all filters: public, income threshold, brainrot validation, and player count
-            if serverData.isPublic 
-                and serverData.income >= Config.MinimumIncome 
-                and validateBrainrots(serverData.brainrots)
-                and serverData.players < Config.MaxPlayerCount then
+            -- Mark as public (API only returns public servers)
+            serverData.isPublic = true
+            
+            -- Note: We cannot detect income or brainrots from the API
+            -- The API only gives us: jobId, players, maxPlayers, ping
+            -- Income/brainrots would require joining the server
+            -- For now, we'll show all servers and let user choose
+            serverData.income = 0 -- Unknown income
+            serverData.brainrots = {} -- Unknown brainrots
+            
+            -- Apply filters: only player count matters since we can't detect income from API
+            if serverData.players < Config.MaxPlayerCount then
                 foundCount = foundCount + 1
                 table.insert(ServerList, serverData)
             end
@@ -1217,12 +1238,16 @@ local function scanServers()
 
         updateServerListDisplay()
 
-        -- Auto-join best server if enabled
+        if #ServerList == 0 then
+            createNotification("Auto-Joiner", "No servers found matching filters (player count < " .. Config.MaxPlayerCount .. ")", 4)
+        else
+            createNotification("Auto-Joiner", "Found " .. foundCount .. " eligible servers!", 3)
+        end
+
+        -- Auto-join: just join the first non-full server since we can't detect income from API
         if Config.Enabled and #ServerList > 0 then
-            table.sort(ServerList, function(a, b) return a.income > b.income end)
             local bestServer = ServerList[1]
-            local brainrotInfo = #bestServer.brainrots > 0 and " with " .. table.concat(bestServer.brainrots, ", ") or ""
-            createNotification("Auto-Joiner", "Found server: " .. formatNumber(bestServer.income) .. "/s" .. brainrotInfo, 4)
+            createNotification("Auto-Joiner", "Joining server with " .. bestServer.players .. "/" .. bestServer.maxPlayers .. " players...", 3)
             task.wait(2)
             joinServer(bestServer.jobId)
         end
@@ -1318,6 +1343,26 @@ local function setupEventHandlers()
         end)
     end
 
+    -- Place ID input (CRITICAL FIX)
+    if UIElements.PlaceIdInput then
+        UIElements.PlaceIdInput.FocusLost:Connect(function()
+            local value = tonumber(UIElements.PlaceIdInput.Text)
+            if value and value > 0 then
+                Config.PlaceId = value
+                Config.UniverseId = nil -- Reset to force re-fetch
+                Config.UniverseIdErrorShown = false -- Allow new error message
+                createNotification("Settings", "Place ID updated! Universe ID will be re-fetched.", 3)
+                createNotification("Info", "New Place ID: " .. value, 3)
+                -- Clear server list to force rescan
+                ServerList = {}
+                updateServerListDisplay()
+            else
+                UIElements.PlaceIdInput.Text = tostring(Config.PlaceId)
+                createNotification("Error", "Invalid Place ID! Must be a positive number", 3)
+            end
+        end)
+    end
+
     -- ESP Toggle button
     if UIElements.ESPToggleButton then
         UIElements.ESPToggleButton.MouseButton1Click:Connect(function()
@@ -1345,6 +1390,8 @@ local function init()
     startAutoScan()
     startESP() -- Start ESP system
     createNotification("Steal a Brainrot", "By Sammy - Script loaded! Click brain icon.", 4)
+    task.wait(4)
+    createNotification("IMPORTANT", "If you see wrong game servers, check Settings > Game Place ID!", 5)
 end
 
 -- Run
