@@ -916,10 +916,10 @@ local function updateServerListDisplay()
         incomeLabel.Size = UDim2.new(1, -20, 0, 16)
         incomeLabel.Position = UDim2.new(0, 10, 0, 25)
         incomeLabel.BackgroundTransparency = 1
-        -- Show "Unknown" if income is 0 (can't detect from API)
-        local incomeText = server.income > 0 and ("💰 Income: " .. formatNumber(server.income) .. "/s") or "💰 Income: Unknown (join to check)"
+        -- Show "Unknown" if income is nil or 0 (can't detect from API)
+        local incomeText = (server.income and server.income > 0) and ("💰 Income: " .. formatNumber(server.income) .. "/s") or "💰 Income: Unknown (join to check)"
         incomeLabel.Text = incomeText
-        incomeLabel.TextColor3 = server.income > 0 and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(150, 150, 150)
+        incomeLabel.TextColor3 = (server.income and server.income > 0) and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(150, 150, 150)
         incomeLabel.TextSize = 12
         incomeLabel.Font = Enum.Font.Gotham
         incomeLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1218,8 +1218,8 @@ local function scanServers()
             -- The API only gives us: jobId, players, maxPlayers, ping
             -- Income/brainrots would require joining the server
             -- For now, we'll show all servers and let user choose
-            serverData.income = 0 -- Unknown income
-            serverData.brainrots = {} -- Unknown brainrots
+            serverData.income = nil -- Unknown income (nil = not detected)
+            serverData.brainrots = {} -- Unknown brainrots (empty array = not detected)
             
             -- Apply filters: only player count matters since we can't detect income from API
             if serverData.players < Config.MaxPlayerCount then
