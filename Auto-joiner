@@ -1002,7 +1002,8 @@ local function validateServerGame(serverData)
         return true
     end
     
-    -- Check player count threshold
+    -- Check player count threshold - reject if server has MaxPlayerCount or more players
+    -- Example: If MaxPlayerCount = 10, reject servers with 10, 11, 12 players (only accept 0-9)
     if serverData.players and serverData.players >= Config.MaxPlayerCount then
         return false
     end
