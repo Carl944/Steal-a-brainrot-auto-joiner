@@ -1,212 +1,200 @@
 # Steal a Brainrot Auto Joiner
 
-A Roblox script for automatically joining high-income servers in "Steal a Brainrot" by Sammy.
+A Roblox script for automatically joining public servers in "Steal a Brainrot".
+
+## 🚨 IMPORTANT - READ FIRST
+
+**If you're seeing servers from other games:**
+1. Open the UI (click brain icon)
+2. Go to **Settings** tab
+3. Find **"Game Place ID (IMPORTANT!)"** (red border)
+4. Verify the Place ID matches your game
+5. If wrong, enter the correct Place ID from your game's URL
+
+**Understanding the Limitations:**
+- ✅ The script CAN show all public servers for your game
+- ❌ The script CANNOT detect income or brainrots from the API
+- ℹ️ You must JOIN a server to see income and brainrots
+- ℹ️ The Roblox API only provides: server job ID, player count, ping
 
 ## 🎯 Features
 
 ### Core Functionality
-- ✅ **Smart Server Filtering** - Only shows Steal-a-Brainrot servers (no ghost servers!)
-- ✅ **Automatic Server Scanning** - Finds high-income public servers
-- ✅ **Income-Based Joining** - Joins servers with income ≥ threshold (default 100M/s)
+- ✅ **Real Server Fetching** - Shows ONLY real servers from Roblox API (no fake/simulated data)
+- ✅ **Place ID Verification** - Configure the correct game Place ID in Settings
+- ✅ **Player Count Filtering** - Avoid crowded servers (configurable)
 - ✅ **ESP System** - Highlights the highest value Brainrot on the server
 - ✅ **Modern UI** - Neon black theme with purple accents
 
-### Advanced Filtering (NEW!)
-- 🚫 **Ghost Server Prevention** - Validates servers are running the correct game
-- 👥 **Player Count Filter** - Avoid crowded servers (configurable max player count)
-- 🧠 **Brainrot Filtering** - Whitelist/blacklist specific brainrot types
-- ⚡ **Universe ID Validation** - Ensures servers match Steal-a-Brainrot
-- 🎯 **Multi-Filter System** - Combines all filters for optimal results
+### What You Can Filter
+- 👥 **Player Count** - Only join servers with fewer than X players
+- 🎮 **Place ID** - Ensure you're looking at the right game's servers
+
+### What You CANNOT Filter (API Limitations)
+- ❌ **Income** - Must join server to see
+- ❌ **Brainrot Types** - Must join server to see
+- ❌ **Brainrot Values** - Must join server to see
 
 ## 🚀 Quick Start
 
-1. **Get an Executor**: Use a Roblox script executor (e.g., Synapse, KRNL, etc.)
+1. **Get an Executor**: Use a Roblox script executor
 2. **Copy the Script**: Copy the entire `Auto-joiner` file
 3. **Execute in Game**: Run the script while in Roblox
-4. **Click the Brain Icon**: UI appears on the left side of screen
-5. **Configure Settings**: Adjust income threshold and filters
-6. **Start Auto-Joiner**: Click "Start Auto-Joiner" button
+4. **Click the Brain Icon**: UI appears on the left side
+5. **VERIFY PLACE ID**: Go to Settings → Check "Game Place ID"
+6. **Start Scanning**: Click "Start Auto-Joiner" in Dashboard
 
 ## 📋 Configuration
 
-### Basic Settings
+### Critical Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Minimum Income | 100M/s | Only join servers with this income or higher |
-| Max Player Count | 12 | Skip servers with more than this many players |
-| Scan Interval | 30s | Time between server scans |
-| Place ID | 109983668079237 | Steal a Brainrot official game ID |
+| Setting | Location | Description |
+|---------|----------|-------------|
+| **Place ID** | Settings tab | The game's Place ID - MUST BE CORRECT! |
+| Max Player Count | Settings tab | Only join servers with < this many players |
 
-### Advanced Filters
+### How to Find Your Game's Place ID
 
-```lua
--- Filter by player count (avoid crowded servers)
-Config.MaxPlayerCount = 8  -- Only join servers with < 8 players
+1. Go to the Roblox game page
+2. Look at the URL: `https://www.roblox.com/games/{PLACE_ID}/game-name`
+3. Copy the number (Place ID)
+4. Enter it in Settings → "Game Place ID"
 
--- Ignore servers with unknown brainrots
-Config.IgnoreUnknown = true
-
--- Only join servers with specific brainrots (whitelist)
-Config.BrainrotWhitelist = {"Sigma", "Grimace", "Gigachad"}
-
--- Never join servers with these brainrots (blacklist)
-Config.BrainrotBlacklist = {"Ohio", "Beta", "Sus"}
-
--- Validate that servers are running Steal-a-Brainrot
-Config.ValidateGameMatch = true
-```
+**Example:**
+- URL: `https://www.roblox.com/games/109983668079237/Steal-a-Brainrot`
+- Place ID: `109983668079237`
 
 ## 🎮 Usage
 
-### UI Tabs
+### Step-by-Step
 
-1. **Dashboard** - Status, statistics, and main toggle
-2. **Settings** - Configure income threshold, scan interval, and player count
-3. **Servers** - View all eligible servers with details
-4. **ESP** - Toggle Brainrot ESP highlighting
+1. **Launch Script** in Roblox
+2. **Click Brain Icon** (left side of screen)
+3. **Go to Settings Tab**
+4. **Verify Place ID** - This is the most important step!
+5. **Adjust Max Player Count** (optional - default is 12)
+6. **Return to Dashboard**
+7. **Click "Start Auto-Joiner"**
+8. **Script scans and shows available servers**
+9. **Join a server** to see income and brainrots
 
-### How to Use
-
-1. Open the UI by clicking the brain emoji icon
-2. Go to **Settings** tab to configure:
-   - Minimum income threshold
-   - Scan interval (seconds between scans)
-   - Max player count (avoid full servers)
-3. Return to **Dashboard** tab
-4. Click "Start Auto-Joiner" (🔴 → 🟢)
-5. Script automatically scans and joins best servers
-6. Enable ESP in the ESP tab for in-game highlighting
-
-### Recommended Workflow
+### What Happens When You Start
 
 ```
-1. Join Steal a Brainrot
-2. Execute the Auto-joiner script
-3. Click brain icon to open UI
-4. Configure your desired settings
-5. Start the auto-joiner
-6. Script finds and joins high-income servers
-7. ESP highlights the best brainrot to steal
+1. Script fetches Universe ID from your Place ID
+2. Script queries Roblox API for public servers
+3. Filters servers by player count
+4. Shows you all available servers
+5. You choose which server to join
 ```
 
-## 🛡️ Server Filtering Explained
+## 🛡️ Troubleshooting
 
-### Why Server Filtering Matters
+### Problem: "Seeing servers from other games"
 
-Without proper filtering, you might:
-- ❌ See servers from other games (ghost servers)
-- ❌ Join full servers where you can't participate
-- ❌ Waste time on low-value servers
-- ❌ Join servers with undesirable brainrots
+**Solution:**
+1. Open Settings tab
+2. Check the Place ID setting (red border)
+3. Make sure it matches YOUR game
+4. If wrong, update it and try again
 
-### How It Works
+### Problem: "No servers found"
 
-The auto-joiner uses **5-stage filtering**:
+**Possible Causes:**
+- Place ID is incorrect
+- All servers are full (increase Max Player Count)
+- Game has no public servers currently
+- API is temporarily unavailable
 
-```
-Stage 1: Fetch servers from Roblox API using Universe ID
-         ↓
-Stage 2: Validate server is from Steal-a-Brainrot
-         ↓
-Stage 3: Check if server is public and not full
-         ↓
-Stage 4: Verify income meets minimum threshold
-         ↓
-Stage 5: Validate brainrot names (whitelist/blacklist)
-         ↓
-Result: Only eligible servers shown and joined
-```
+**Solutions:**
+1. Verify Place ID in Settings
+2. Increase Max Player Count to 100
+3. Try again later
+4. Check console for error messages
 
-### Filter Examples
+### Problem: "Income shows as Unknown"
 
-**Conservative (High Quality)**
+**This is normal!** The Roblox API doesn't provide income data. You must:
+1. Join a server
+2. Use the ESP feature to find high-value brainrots
+3. Income will be visible once you're in the server
+
+### Problem: "Brainrots show as Unknown"
+
+**This is normal!** The Roblox API doesn't provide brainrot data. You must:
+1. Join a server
+2. Enable ESP in the ESP tab
+3. The script will highlight the highest value brainrot
+
+## 📊 What the UI Shows
+
+### Dashboard Tab
+- **Status**: Active/Inactive
+- **Servers Scanned**: Total servers checked from API
+- **Eligible Servers**: Servers matching your filters
+
+### Settings Tab
+- **Game Place ID** ⚠️ MOST IMPORTANT SETTING
+- **Minimum Income**: (Not used - API limitation)
+- **Scan Interval**: Time between scans
+- **Max Player Count**: Avoid crowded servers
+
+### Servers Tab
+Shows all eligible servers with:
+- 🌐 Server number
+- 💰 Income: Unknown (join to check)
+- 👥 Players: X/Y (actual count from API)
+- 🧠 Brainrots: Unknown (join to check)
+- **Join Button**: Click to teleport
+
+### ESP Tab
+- Toggle ESP on/off
+- Highlights highest value brainrot (when in a server)
+
+## 🔧 Advanced Configuration
+
+### In the Script Code
+
 ```lua
-Config.MinimumIncome = 200000000  -- 200M/s
-Config.MaxPlayerCount = 8
-Config.BrainrotWhitelist = {"Sigma", "Grimace"}
+-- Change default Place ID (at top of script)
+Config.PlaceId = 109983668079237  -- Change this to your game's Place ID
+
+-- Change max player threshold
+Config.MaxPlayerCount = 8  -- Only join servers with < 8 players
+
+-- Enable/disable validation
+Config.ValidateGameMatch = true  -- Always keep this true
 ```
-→ Only high-income, low-player servers with specific brainrots
-
-**Aggressive (More Opportunities)**
-```lua
-Config.MinimumIncome = 100000000  -- 100M/s
-Config.MaxPlayerCount = 12
-Config.BrainrotWhitelist = {}  -- Any brainrot
-```
-→ Any server meeting income threshold
-
-**Blacklist Specific Types**
-```lua
-Config.MinimumIncome = 150000000
-Config.BrainrotBlacklist = {"Ohio", "Beta"}
-```
-→ Good income but avoiding specific brainrots
-
-## 📊 Statistics Tracking
-
-The UI displays:
-- **Servers Scanned**: Total servers checked
-- **Eligible Servers**: Servers passing all filters
-- **Current Income Threshold**: Your minimum income setting
-
-## 🎨 ESP System
-
-### Features
-- Highlights **ONLY** the highest value brainrot on the server
-- Neon pink/purple glow effect
-- Billboard label with name and value
-- Auto-updates every 2 seconds
-- Toggle on/off via ESP tab
-
-### Brainrot Types Detected
-- Skibidi, Grimace, Cameraman
-- Ohio, Rizz, Sigma, Gyatt
-- Mewing, Fanum, Smurf Cat
-- Rizz God, Sigma Male, Gigachad
-- And more...
-
-## 🔧 Troubleshooting
-
-### No Servers Found
-**Cause**: Filters too strict or API issues  
-**Fix**: 
-- Lower minimum income threshold
-- Increase max player count
-- Clear whitelist/blacklist
-- Check console for errors
-
-### Ghost Servers Appearing
-**Cause**: Validation disabled or incorrect Place ID  
-**Fix**:
-- Verify `Config.ValidateGameMatch = true`
-- Check `Config.PlaceId = 109983668079237`
-- Update to latest script version
-
-### Can't Join Servers
-**Cause**: Server full or teleport error  
-**Fix**:
-- Lower `MaxPlayerCount` to avoid full servers
-- Wait for scan to find new servers
-- Check console for teleport errors
-
-### ESP Not Working
-**Cause**: ESP disabled or no brainrots found  
-**Fix**:
-- Enable ESP in ESP tab
-- Verify you're in an active server
-- Check that brainrots exist in workspace
-
-## 📖 Advanced Topics
-
-See [FILTERING_GUIDE.md](FILTERING_GUIDE.md) for detailed information on:
-- Advanced configuration examples
-- Best practices from similar auto joiners
-- Technical implementation details
-- API endpoints and validation
-- Debugging and troubleshooting
 
 ## ⚠️ Important Notes
+
+### API Limitations
+The Roblox public API (`/v1/games/{universeId}/servers/Public`) provides:
+- ✅ Server job ID
+- ✅ Player count
+- ✅ Max players
+- ✅ Ping
+- ❌ Income
+- ❌ Brainrot data
+- ❌ Any game-specific information
+
+**This means:** You cannot filter by income or brainrots without actually joining servers.
+
+### Why No Income/Brainrot Filtering?
+
+To detect income or brainrots, the script would need to:
+1. Join each server
+2. Read the game's UI or workspace
+3. Collect the data
+4. Leave and join the next server
+
+This is:
+- ⚠️ Very slow (minutes per server)
+- ⚠️ Against some game rules
+- ⚠️ May trigger anti-cheat
+- ⚠️ Uses your player slot
+
+Therefore, this script shows you ALL servers and lets YOU choose based on player count.
 
 ### Safety
 - Use at your own risk
@@ -215,56 +203,21 @@ See [FILTERING_GUIDE.md](FILTERING_GUIDE.md) for detailed information on:
 - Don't share account credentials
 - Use responsibly
 
-### Performance
-- Don't run 24/7 (detection risk)
-- Use reasonable scan intervals (30+ seconds)
-- Don't join servers too rapidly
-- Monitor for game updates
-
-### Ethics
-- Respect other players
-- Follow game rules
-- Don't exploit or abuse
-- Use for intended purposes only
-
-## 🔄 Updates
-
-### Version 2.0 (Latest)
-- ✅ Fixed ghost server issue
-- ✅ Added comprehensive server filtering
-- ✅ Added player count filtering
-- ✅ Added brainrot whitelist/blacklist
-- ✅ Improved Universe ID validation
-- ✅ Enhanced error handling
-- ✅ Added UI controls for new settings
-- ✅ Better logging and notifications
-
-### Version 1.0
-- Initial release
-- Basic auto-joining
-- ESP system
-- Simple UI
-
 ## 📝 Credits
 
 **By**: Sammy (SpyderSammy)  
-**Game**: Steal a Brainrot (Official)  
-**Place ID**: 109983668079237
+**Game**: Steal a Brainrot (and compatible games)  
+**Default Place ID**: 109983668079237
 
-Inspired by best practices from:
-- Chilli Hub Auto Joiner
-- Nameless Hub
-- Community feedback
+## 🆘 Getting Help
 
-## 📞 Support
-
-For issues or improvements:
-1. Read the documentation
-2. Check console for errors
-3. Verify configuration
-4. Review [FILTERING_GUIDE.md](FILTERING_GUIDE.md)
-5. Report bugs with details
+1. **Verify Place ID** - Most common issue!
+2. **Check console** for error messages
+3. **Read error notifications** in-game
+4. **Make sure you're using a compatible game**
 
 ---
 
-**Disclaimer**: This script is provided as-is for educational purposes. Use at your own risk. The author is not responsible for any consequences of using this script, including but not limited to account bans, data loss, or any other damages.
+**Version**: 3.0 (Critical Fix Update)  
+**Last Updated**: 2026-01-07  
+**Focus**: Real API data only, Place ID verification
