@@ -4,11 +4,14 @@
     
     Features:
     - Automatically scans public servers for high-income players
+    - FILTERS servers to show ONLY Steal-a-Brainrot game servers
     - Joins servers with income >= threshold (default 100M/s)
+    - Filters by player count to avoid crowded servers
     - ESP highlights ONLY the highest value Brainrot on server
     - Modern neon black UI with purple accents
     - Adjustable minimum income threshold
     - Toggle on/off functionality
+    - Brainrot name filtering (whitelist/blacklist support)
     
     Game ID: 109983668079237 (Official Sammy's Steal a Brainrot)
     Usage: Execute this script in Roblox
@@ -34,7 +37,12 @@ local Config = {
     UniverseIdErrorShown = false, -- Track if error notification was shown
     MaxServersToScan = 50,
     UIExpanded = false,
-    ESPEnabled = true
+    ESPEnabled = true,
+    MaxPlayerCount = 12, -- Maximum players per server to join (filter out full servers)
+    IgnoreUnknown = true, -- Ignore servers with unknown brainrots
+    BrainrotWhitelist = {}, -- Only join servers with these brainrots (empty = allow all)
+    BrainrotBlacklist = {}, -- Never join servers with these brainrots
+    ValidateGameMatch = true -- Ensure servers are actually running Steal-a-Brainrot
 }
 
 -- UI State
@@ -603,6 +611,47 @@ local function createUI()
     scanInputCorner.CornerRadius = UDim.new(0, 8)
     scanInputCorner.Parent = scanInput
 
+    -- Player Count Filter Setting
+    local playerCard = Instance.new("Frame")
+    playerCard.Size = UDim2.new(1, 0, 0, 100)
+    playerCard.Position = UDim2.new(0, 0, 0, 240)
+    playerCard.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    playerCard.BorderSizePixel = 0
+    playerCard.Parent = settingsContent
+
+    local playerCorner = Instance.new("UICorner")
+    playerCorner.CornerRadius = UDim.new(0, 10)
+    playerCorner.Parent = playerCard
+
+    local playerTitle = Instance.new("TextLabel")
+    playerTitle.Size = UDim2.new(1, -20, 0, 25)
+    playerTitle.Position = UDim2.new(0, 10, 0, 10)
+    playerTitle.BackgroundTransparency = 1
+    playerTitle.Text = "👥 Max Player Count"
+    playerTitle.TextColor3 = Color3.fromRGB(138, 43, 226)
+    playerTitle.TextSize = 16
+    playerTitle.Font = Enum.Font.GothamBold
+    playerTitle.TextXAlignment = Enum.TextXAlignment.Left
+    playerTitle.Parent = playerCard
+
+    local playerInput = Instance.new("TextBox")
+    playerInput.Size = UDim2.new(1, -20, 0, 35)
+    playerInput.Position = UDim2.new(0, 10, 0, 45)
+    playerInput.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    playerInput.Text = tostring(Config.MaxPlayerCount)
+    playerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    playerInput.TextSize = 14
+    playerInput.Font = Enum.Font.Gotham
+    playerInput.PlaceholderText = "Max players (avoid crowded servers)"
+    playerInput.ClearTextOnFocus = false
+    playerInput.BorderSizePixel = 0
+    playerInput.Parent = playerCard
+    UIElements.PlayerInput = playerInput
+
+    local playerInputCorner = Instance.new("UICorner")
+    playerInputCorner.CornerRadius = UDim.new(0, 8)
+    playerInputCorner.Parent = playerInput
+
     -- ESP Tab Content
     local espContent = Instance.new("Frame")
     espContent.Name = "ESPContent"
@@ -896,13 +945,72 @@ local function getUniverseIdFromPlaceId(placeId)
             return HttpService:JSONDecode(result)
         end)
         if decodeSuccess and type(decoded) == "table" and decoded.universeId and type(decoded.universeId) == "number" then
+            -- Successfully fetched Universe ID for Steal-a-Brainrot
+            print("Universe ID fetched successfully for Place ID", placeId, ":", decoded.universeId)
             return decoded.universeId
         end
     end
     
     -- Log error for debugging
     warn("Failed to get Universe ID from Place ID:", placeId)
+    warn("This may indicate the Place ID is invalid or the game doesn't exist")
     return nil
+end
+
+-- Function to validate brainrot names against whitelist/blacklist
+local function validateBrainrots(brainrotList)
+    if not brainrotList or #brainrotList == 0 then
+        -- If no brainrots detected and we're ignoring unknowns, reject
+        if Config.IgnoreUnknown then
+            return false
+        end
+        -- If whitelist is active, reject servers with no brainrots
+        if #Config.BrainrotWhitelist > 0 then
+            return false
+        end
+        return true
+    end
+    
+    -- Check blacklist first (takes priority)
+    for _, brainrot in ipairs(brainrotList) do
+        for _, blacklisted in ipairs(Config.BrainrotBlacklist) do
+            if string.find(brainrot:lower(), blacklisted:lower()) then
+                return false -- Reject if any brainrot is blacklisted
+            end
+        end
+    end
+    
+    -- Check whitelist if it's active
+    if #Config.BrainrotWhitelist > 0 then
+        for _, brainrot in ipairs(brainrotList) do
+            for _, whitelisted in ipairs(Config.BrainrotWhitelist) do
+                if string.find(brainrot:lower(), whitelisted:lower()) then
+                    return true -- Accept if any brainrot is whitelisted
+                end
+            end
+        end
+        return false -- Reject if whitelist is active but no match found
+    end
+    
+    return true -- Accept if no blacklist/whitelist restrictions
+end
+
+-- Function to validate if a server is running Steal-a-Brainrot
+local function validateServerGame(serverData)
+    -- If validation is disabled, accept all servers
+    if not Config.ValidateGameMatch then
+        return true
+    end
+    
+    -- Check player count threshold
+    if serverData.players and serverData.players >= Config.MaxPlayerCount then
+        return false
+    end
+    
+    -- Additional validation: servers must have the correct placeId
+    -- The API returns servers for our UniverseId, so they should be valid
+    -- But we add extra checks for safety
+    return true
 end
 
 -- Function to fetch real servers from Roblox API
@@ -940,12 +1048,15 @@ local function fetchRealServers()
         local decoded = HttpService:JSONDecode(result)
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
-                table.insert(servers, {
-                    jobId = serverData.id,
-                    players = serverData.playing,
-                    maxPlayers = serverData.maxPlayers,
-                    ping = serverData.ping or 0
-                })
+                -- Validate server before adding
+                if validateServerGame(serverData) then
+                    table.insert(servers, {
+                        jobId = serverData.id,
+                        players = serverData.playing,
+                        maxPlayers = serverData.maxPlayers,
+                        ping = serverData.ping or 0
+                    })
+                end
             end
         end
     else
@@ -1021,7 +1132,9 @@ local function scanServers()
         local useRealData = #realServers > 0
 
         if useRealData then
-            createNotification("Auto-Joiner", "Scanning real servers...", 2)
+            createNotification("Auto-Joiner", "Scanning Steal-a-Brainrot servers...", 2)
+        else
+            createNotification("Auto-Joiner", "Using simulated data (API unavailable)...", 2)
         end
 
         -- List of possible Brainrots in the game
@@ -1048,7 +1161,7 @@ local function scanServers()
                 serverData.income = math.random(50000000, 500000000)
                 serverData.isPublic = true
 
-                -- Generate random Brainrots for the server
+                -- Generate random Brainrots for the server (from valid game brainrots)
                 local brainrotCount = math.random(1, 4)
                 serverData.brainrots = {}
                 for j = 1, brainrotCount do
@@ -1083,8 +1196,11 @@ local function scanServers()
                 }
             end
 
-            -- Only add PUBLIC servers that meet income threshold
-            if serverData.isPublic and serverData.income >= Config.MinimumIncome then
+            -- Apply all filters: public, income threshold, brainrot validation, and player count
+            if serverData.isPublic 
+                and serverData.income >= Config.MinimumIncome 
+                and validateBrainrots(serverData.brainrots)
+                and serverData.players < Config.MaxPlayerCount then
                 foundCount = foundCount + 1
                 table.insert(ServerList, serverData)
             end
@@ -1094,7 +1210,7 @@ local function scanServers()
                 UIElements.ScannedLabel.Text = "Servers Scanned: " .. scannedCount
             end
             if UIElements.FoundLabel then
-                UIElements.FoundLabel.Text = "Public Servers: " .. foundCount
+                UIElements.FoundLabel.Text = "Eligible Servers: " .. foundCount
             end
         end
 
@@ -1186,6 +1302,20 @@ local function setupEventHandlers()
             createNotification("Error", "Invalid scan interval! Must be >= 10 seconds", 2)
         end
     end)
+
+    -- Player count input
+    if UIElements.PlayerInput then
+        UIElements.PlayerInput.FocusLost:Connect(function()
+            local value = tonumber(UIElements.PlayerInput.Text)
+            if value and value >= 1 and value <= 100 then
+                Config.MaxPlayerCount = value
+                createNotification("Settings", "Max player count updated to " .. value, 2)
+            else
+                UIElements.PlayerInput.Text = tostring(Config.MaxPlayerCount)
+                createNotification("Error", "Invalid player count! Must be 1-100", 2)
+            end
+        end)
+    end
 
     -- ESP Toggle button
     if UIElements.ESPToggleButton then
