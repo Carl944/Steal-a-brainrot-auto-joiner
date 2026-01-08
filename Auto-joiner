@@ -1226,8 +1226,11 @@ end
 function joinServer(jobId, serverPlaceId)
     createNotification("Auto-Joiner", "Attempting to join server...", 3)
 
-    -- Use server's placeId if UseServerPlaceId is enabled and serverPlaceId is provided
-    local targetPlaceId = (Config.UseServerPlaceId and serverPlaceId) or Config.PlaceId
+    -- Use server's placeId if UseServerPlaceId is enabled and serverPlaceId is a valid number
+    local targetPlaceId = Config.PlaceId
+    if Config.UseServerPlaceId and serverPlaceId and type(serverPlaceId) == "number" then
+        targetPlaceId = serverPlaceId
+    end
 
     local success, err = pcall(function()
         TeleportService:TeleportToPlaceInstance(targetPlaceId, jobId, LocalPlayer)
@@ -1310,7 +1313,7 @@ local function fetchRealServers()
                 -- Only include servers that match our target placeId
                 -- The API response includes placeId for each server
                 local serverPlaceId = serverData.placeId
-                if serverPlaceId and serverPlaceId == targetPlaceId then
+                if serverPlaceId and type(serverPlaceId) == "number" and serverPlaceId == targetPlaceId then
                     table.insert(servers, {
                         jobId = serverData.id,
                         players = serverData.playing,
