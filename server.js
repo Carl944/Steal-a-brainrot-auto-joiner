@@ -6,6 +6,9 @@ dotenv.config();
 
 const app = express();
 
+// Configure Express to trust proxy for accurate IP detection
+app.set('trust proxy', true);
+
 // Tolerant JSON parsing
 app.use(express.json({ strict: false }));
 app.use((req, res, next) => {
@@ -35,6 +38,21 @@ if (!WEBHOOK_LOW || !WEBHOOK_HIGH) {
   console.error("ERROR: WEBHOOK_LOW and WEBHOOK_HIGH environment variables are required!");
   process.exit(1);
 }
+
+// Validate webhook URLs
+const WEBHOOK_URL_PATTERN = /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[\w-]+$/;
+if (!WEBHOOK_URL_PATTERN.test(WEBHOOK_LOW)) {
+  console.error("ERROR: WEBHOOK_LOW is not a valid Discord webhook URL");
+  process.exit(1);
+}
+if (!WEBHOOK_URL_PATTERN.test(WEBHOOK_HIGH)) {
+  console.error("ERROR: WEBHOOK_HIGH is not a valid Discord webhook URL");
+  process.exit(1);
+}
+
+// Constants
+const MAX_BRAINROTS = 25;
+const DISCORD_TIMEOUT = 10000; // 10 seconds
 
 // Rate limiting: 15s window, 30 req/IP
 const rateLimitMap = new Map();
@@ -114,7 +132,7 @@ async function sendEmbed(brainrots, payload, webhookUrl, webhookType) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), DISCORD_TIMEOUT);
 
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -178,7 +196,7 @@ app.get("/status", (req, res) => {
 });
 
 app.post("/data", authenticate, async (req, res) => {
-  const clientIp = req.ip || req.connection.remoteAddress;
+  const clientIp = req.ip;
 
   // Rate limiting
   if (!checkRateLimit(clientIp)) {
@@ -204,8 +222,8 @@ app.post("/data", authenticate, async (req, res) => {
       return res.json({ ok: true, message: "Duplicate request ignored" });
     }
 
-    // Truncate to 25 entries
-    const brainrots = payload.brainrots.slice(0, 25);
+    // Truncate to MAX_BRAINROTS entries
+    const brainrots = payload.brainrots.slice(0, MAX_BRAINROTS);
 
     // Separate by range
     const lowBrainrots = brainrots.filter(b => b.value >= 1e6 && b.value <= 1e7);

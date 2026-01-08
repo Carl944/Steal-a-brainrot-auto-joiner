@@ -531,7 +531,8 @@ local function sendNotifier(brainrots)
     
     -- Get top brainrot for deduplication key
     local topBrainrot = brainrots[1]
-    local dedupKey = game.JobId .. "_" .. topBrainrot.name .. "_" .. tostring(topBrainrot.value)
+    -- Use pipe delimiter to prevent collision issues
+    local dedupKey = game.JobId .. "|" .. topBrainrot.name .. "|" .. tostring(topBrainrot.value)
     
     -- Check deduplication
     local currentTime = os.clock()
