@@ -38,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 let lastLowNotification = null;
 let lastHighNotification = null;
 const recentPayloads = []; // Stores last 50 payload summaries
-const recentHashes = new Set(); // For deduplication (last 100 hashes)
+const recentHashes = []; // For deduplication (last 100 hashes) - FIFO array
 const requestCounts = new Map(); // For rate limiting: IP -> {count, resetTime}
 
 // Rate limiting configuration
@@ -225,16 +225,14 @@ app.post("/data", async (req, res) => {
 
     // Deduplication check
     const payloadHash = createPayloadHash(payload);
-    if (recentHashes.has(payloadHash)) {
+    if (recentHashes.includes(payloadHash)) {
       console.log(`[${new Date().toISOString()}] Duplicate payload detected, skipping`);
       return res.json({ ok: true, message: "Duplicate payload, skipped" });
     }
     
-    recentHashes.add(payloadHash);
-    if (recentHashes.size > 100) {
-      // Remove oldest hash (Set doesn't have FIFO, so convert to array)
-      const hashes = Array.from(recentHashes);
-      recentHashes.delete(hashes[0]);
+    recentHashes.push(payloadHash);
+    if (recentHashes.length > 100) {
+      recentHashes.shift(); // Remove oldest hash (FIFO)
     }
 
     // Store payload summary
