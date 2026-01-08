@@ -4,29 +4,14 @@ import fetch from "node-fetch";
 
 const app = express();
 
-// Middleware to parse JSON with content-type fallback
-app.use((req, res, next) => {
-  const contentType = req.get("content-type") || "";
-  
-  if (req.method === "POST" && !contentType.includes("application/json")) {
-    // Attempt to parse as JSON anyway for clients that don't set content-type
-    let rawData = "";
-    req.setEncoding("utf8");
-    req.on("data", (chunk) => {
-      rawData += chunk;
-    });
-    req.on("end", () => {
-      try {
-        req.body = JSON.parse(rawData);
-        next();
-      } catch (e) {
-        res.status(400).json({ ok: false, error: "Invalid JSON payload" });
-      }
-    });
-  } else {
-    express.json()(req, res, next);
-  }
-});
+// Trust proxy for correct IP detection
+app.set("trust proxy", true);
+
+// JSON body parser with lenient content-type handling
+app.use(express.json({ 
+  type: ["application/json", "text/plain", "*/*"],
+  strict: false 
+}));
 
 // Environment variables
 const WEBHOOK_LOW = process.env.WEBHOOK_LOW;
@@ -38,7 +23,8 @@ const PORT = process.env.PORT || 3000;
 let lastLowNotification = null;
 let lastHighNotification = null;
 const recentPayloads = []; // Stores last 50 payload summaries
-const recentHashes = []; // For deduplication (last 100 hashes) - FIFO array
+const recentHashesArray = []; // FIFO array for hash order
+const recentHashesSet = new Set(); // Fast O(1) lookup
 const requestCounts = new Map(); // For rate limiting: IP -> {count, resetTime}
 
 // Rate limiting configuration
@@ -180,7 +166,7 @@ app.get("/debug/last", (req, res) => {
 app.post("/data", async (req, res) => {
   try {
     // Request logging (safe, minimal fields)
-    const clientIp = req.ip || req.connection.remoteAddress;
+    const clientIp = req.ip || req.socket?.remoteAddress || "unknown";
     console.log(`[${new Date().toISOString()}] POST /data from ${clientIp}`);
     
     // Authentication check
@@ -223,16 +209,21 @@ app.post("/data", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid payload: brainrots must be an array" });
     }
 
-    // Deduplication check
+    // Deduplication check (O(1) lookup with Set)
     const payloadHash = createPayloadHash(payload);
-    if (recentHashes.includes(payloadHash)) {
+    if (recentHashesSet.has(payloadHash)) {
       console.log(`[${new Date().toISOString()}] Duplicate payload detected, skipping`);
       return res.json({ ok: true, message: "Duplicate payload, skipped" });
     }
     
-    recentHashes.push(payloadHash);
-    if (recentHashes.length > 100) {
-      recentHashes.shift(); // Remove oldest hash (FIFO)
+    // Add to both Set (for fast lookup) and array (for FIFO)
+    recentHashesSet.add(payloadHash);
+    recentHashesArray.push(payloadHash);
+    
+    // Maintain max size
+    if (recentHashesArray.length > 100) {
+      const oldestHash = recentHashesArray.shift();
+      recentHashesSet.delete(oldestHash);
     }
 
     // Store payload summary
@@ -274,7 +265,6 @@ app.get("/notifications/low", (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Server listening on port ${PORT}`);
-  console.log(`[${new Date().toISOString()}] Webhook LOW: ${WEBHOOK_LOW ? "configured" : "MISSING"}`);
-  console.log(`[${new Date().toISOString()}] Webhook HIGH: ${WEBHOOK_HIGH ? "configured" : "MISSING"}`);
-  console.log(`[${new Date().toISOString()}] Secret token: ${SECRET_TOKEN ? "configured" : "not set (authentication disabled)"}`);
+  console.log(`[${new Date().toISOString()}] Webhooks configured: ${(WEBHOOK_LOW && WEBHOOK_HIGH) ? "Yes" : "Incomplete"}`);
+  console.log(`[${new Date().toISOString()}] Authentication: ${SECRET_TOKEN ? "Enabled" : "Disabled"}`);
 });

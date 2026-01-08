@@ -108,7 +108,8 @@ local ESPLoopTask = nil -- Store ESP task for cleanup
 local TARGET_HITBOX_SIZE = Vector3.new(0.01, 0.01, 0.01) -- Constant for comparison
 local CurrentESPTarget = nil -- Track current ESP target to avoid flickering
 local BrainrotValueCache = {} -- Persistent cache for brainrot values
-local LastNotifiedBrainrots = {} -- Track which brainrots we've already notified about
+local LastNotificationTime = {} -- Track last notification time per player (UserId -> timestamp)
+local NOTIFICATION_COOLDOWN = 300 -- Seconds (5 minutes) between notifications for same player
 
 -- Helper Functions
 local function formatNumber(num)
@@ -299,11 +300,15 @@ local function updateESP()
             -- Notify about the best brainrot
             createNotification("ESP", "Targeting: " .. brainrot.name .. " ($" .. formatNumber(brainrot.value) .. ")", 3)
             
-            -- Send Discord notification if high-value and not already notified
+            -- Send Discord notification if high-value and cooldown expired
             if Notifier.Enabled and brainrot.value >= Config.MinimumIncome then
-                local notifyKey = brainrot.player.UserId .. "_" .. tostring(brainrot.value)
-                if not LastNotifiedBrainrots[notifyKey] then
-                    LastNotifiedBrainrots[notifyKey] = true
+                local currentTime = os.time()
+                local userId = tostring(brainrot.player.UserId)
+                local lastNotifyTime = LastNotificationTime[userId] or 0
+                
+                -- Only notify if cooldown has expired
+                if currentTime - lastNotifyTime >= NOTIFICATION_COOLDOWN then
+                    LastNotificationTime[userId] = currentTime
                     
                     -- Send all high-value brainrots in current server
                     local highValueBrainrots = {}
