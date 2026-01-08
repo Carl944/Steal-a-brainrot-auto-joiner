@@ -26,6 +26,55 @@ local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
+-- Notifier Configuration for Discord Webhooks
+-- IMPORTANT: Use HttpService:RequestAsync (NOT PostAsync) to send custom headers
+local Notifier = {
+    Enabled = false, -- Set to true to enable Discord notifications
+    Url = "https://your-service-name.onrender.com/data", -- Replace with your Render URL
+    SecretToken = "your-secret-token-here" -- Must match SECRET_TOKEN in server .env
+}
+
+-- Function to send notification to Discord via Node server
+local function sendNotification(brainrots, jobId, placeId)
+    if not Notifier.Enabled or not Notifier.Url or Notifier.Url == "" then 
+        return 
+    end
+    
+    -- Prepare payload with brainrot data
+    local payload = {
+        jobId = jobId or game.JobId,
+        placeId = placeId or tostring(game.PlaceId),
+        brainrots = {}
+    }
+    
+    -- Format brainrots array
+    for _, brainrot in ipairs(brainrots) do
+        table.insert(payload.brainrots, {
+            name = brainrot.name,
+            value = brainrot.value
+        })
+    end
+    
+    -- Send request using RequestAsync (supports custom headers)
+    local success, response = pcall(function()
+        return HttpService:RequestAsync({
+            Url = Notifier.Url,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json",
+                ["Authorization"] = Notifier.SecretToken
+            },
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+    
+    if success and response.Success then
+        print("[Notifier] Successfully sent to Discord:", response.Body)
+    else
+        warn("[Notifier] Failed to send notification:", response)
+    end
+end
+
 -- Configuration
 local Config = {
     MinimumIncome = 100000000, -- 100M/s default
@@ -1461,6 +1510,24 @@ local function scanServers()
             local bestServer = ServerList[1]
             local brainrotInfo = #bestServer.brainrots > 0 and " with " .. table.concat(bestServer.brainrots, ", ") or ""
             createNotification("Auto-Joiner", "Found server: " .. formatNumber(bestServer.income) .. "/s" .. brainrotInfo, 4)
+            
+            -- Send notification to Discord if enabled and server meets threshold
+            if bestServer.income >= Config.MinimumIncome then
+                -- Convert brainrot names to notification format
+                local notificationBrainrots = {}
+                for _, name in ipairs(bestServer.brainrots or {}) do
+                    table.insert(notificationBrainrots, {
+                        name = name,
+                        value = bestServer.income -- Using server income as placeholder
+                    })
+                end
+                
+                -- Send to Discord notifier
+                if #notificationBrainrots > 0 then
+                    sendNotification(notificationBrainrots, bestServer.jobId, tostring(Config.PlaceId))
+                end
+            end
+            
             task.wait(2)
             joinServer(bestServer.jobId)
         end
