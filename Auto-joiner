@@ -30,7 +30,7 @@ local LocalPlayer = Players.LocalPlayer
 -- IMPORTANT: Use HttpService:RequestAsync (NOT PostAsync) to send custom headers
 local Notifier = {
     Enabled = false, -- Set to true to enable Discord notifications
-    Url = "https://your-service-name.onrender.com/data", -- Replace with your Render URL
+    Url = "https://steal-a-brainrot-auto-joiner.onrender.com/data",
     SecretToken = "your-secret-token-here" -- Must match SECRET_TOKEN in server .env
 }
 
