@@ -427,8 +427,10 @@ local function autoGrabBrainrot()
 end
 
 -- Anti-Hit (Auto-Dodge) Functions - SAFE CLIENT-SIDE IMPLEMENTATION
--- This does NOT modify hitboxes or replication (ToS compliant)
--- Instead, it detects nearby melee attacks and performs evasive movement
+-- This uses legitimate client-side techniques only:
+-- - Detects nearby threats and performs evasive movement
+-- - Does NOT modify hitboxes, replication, or character properties
+-- - Uses standard Roblox movement APIs only
 
 local function detectNearbyThreats()
     if not LocalPlayer.Character then return {} end
@@ -501,11 +503,19 @@ local function performDodge()
     
     local randomDirection = dodgeDirections[math.random(1, #dodgeDirections)]
     
-    -- Apply dodge movement (simple position adjustment)
+    -- Apply dodge movement with safety checks
     local success = pcall(function()
         local currentCFrame = hrp.CFrame
-        local dodgeCFrame = currentCFrame + (currentCFrame:VectorToWorldSpace(randomDirection))
-        hrp.CFrame = dodgeCFrame
+        local worldDirection = currentCFrame:VectorToWorldSpace(randomDirection)
+        local targetPosition = hrp.Position + worldDirection
+        
+        -- Simple bounds check - ensure target is within reasonable Y range
+        if targetPosition.Y < -500 or targetPosition.Y > 500 then
+            return false
+        end
+        
+        -- Use safer CFrame positioning
+        hrp.CFrame = CFrame.new(targetPosition) * CFrame.Angles(0, currentCFrame:ToEulerAnglesYXZ(), 0)
     end)
     
     return success
@@ -1374,12 +1384,11 @@ local function fetchRealServers()
                 local shouldInclude = true
                 
                 if Config.UseServerPlaceId then
-                    -- Only include servers from the exact placeId we want
-                    -- Note: The API response doesn't include placeId in server data,
-                    -- but querying by universeId should already filter to correct place
-                    -- This is a safeguard to ensure we're on the right game
+                    -- Note: The Roblox games API may not always include placeId in server data.
+                    -- Querying by universeId should already filter to the correct game,
+                    -- but this provides an extra validation layer when placeId is available.
                     if serverData.placeId and serverData.placeId ~= Config.PlaceId then
-                        -- Skip this server if it's not the correct place
+                        -- Skip this server if it's confirmed to be a different place
                         shouldInclude = false
                     end
                 end

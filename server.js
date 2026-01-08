@@ -84,7 +84,7 @@ app.post("/data", async (req, res) => {
     }
 
     if (NODE_ENV === "development") {
-      console.log("Received payload:", JSON.stringify(payload, null, 2));
+      console.log("Received payload with", payload.brainrots?.length || 0, "brainrot(s)");
     }
 
     // Separar brainrots por rango

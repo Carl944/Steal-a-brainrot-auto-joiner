@@ -34,14 +34,16 @@ AutoGrabEnabled = false     -- Auto-grab Brainrots
 
 ### Node.js Server (server.js)
 
-Environment variables for production:
+Environment variables for production (required):
 
 ```bash
 PORT=3000                    # Server port (default: 3000)
 NODE_ENV=production          # Environment mode
-WEBHOOK_LOW=<discord_url>    # Discord webhook for 1-10M brainrots
-WEBHOOK_HIGH=<discord_url>   # Discord webhook for >10M brainrots
+WEBHOOK_LOW=<discord_url>    # Discord webhook for 1-10M brainrots (required in production)
+WEBHOOK_HIGH=<discord_url>   # Discord webhook for >10M brainrots (required in production)
 ```
+
+**Note:** Webhook URLs are not hardcoded for security. You must set them via environment variables in production.
 
 ## API Endpoints
 
