@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from "express";
 import fetch from "node-fetch";
+import { timingSafeEqual } from "crypto";
 
 const {
   WEBHOOK_LOW,
@@ -14,6 +15,7 @@ if (!WEBHOOK_LOW || !WEBHOOK_HIGH) {
 }
 
 const app = express();
+app.set('trust proxy', true);
 app.use(express.json({ limit: "256kb" }));
 
 // Simple rate limiting per IP
@@ -21,7 +23,7 @@ const RATE_WINDOW_MS = 15_000;
 const RATE_MAX_REQUESTS = 30;
 const rateBuckets = new Map();
 app.use((req, res, next) => {
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "unknown";
+  const ip = req.ip || "unknown";
   const now = Date.now();
   let bucket = rateBuckets.get(ip);
   if (!bucket || now - bucket.start > RATE_WINDOW_MS) {
@@ -134,7 +136,17 @@ async function sendToDiscord(webhookUrl, embed) {
 function requireSecret(req, res, next) {
   if (!SECRET_TOKEN) return next();
   const provided = req.headers["x-notifier-token"];
-  if (!provided || provided !== SECRET_TOKEN) {
+  if (!provided) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const providedBuf = Buffer.from(provided);
+    const secretBuf = Buffer.from(SECRET_TOKEN);
+    if (providedBuf.length !== secretBuf.length || !timingSafeEqual(providedBuf, secretBuf)) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+  } catch (err) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
   next();
