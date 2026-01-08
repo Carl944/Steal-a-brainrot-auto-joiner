@@ -1226,10 +1226,12 @@ end
 function joinServer(jobId, serverPlaceId)
     createNotification("Auto-Joiner", "Attempting to join server...", 3)
 
-    -- Use server's placeId if UseServerPlaceId is enabled, serverPlaceId is provided, and it matches our target
+    -- Validate serverPlaceId matches Config.PlaceId when UseServerPlaceId is enabled
+    -- This ensures we never join a server for the wrong place
     local targetPlaceId = Config.PlaceId
-    if Config.UseServerPlaceId and serverPlaceId and serverPlaceId == Config.PlaceId then
-        targetPlaceId = serverPlaceId
+    if Config.UseServerPlaceId and serverPlaceId ~= Config.PlaceId then
+        createNotification("Error", "Server placeId mismatch - refusing to join", 3)
+        return
     end
     
     local success, err = pcall(function()
