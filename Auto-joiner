@@ -1268,7 +1268,7 @@ end
 local function fetchRealServers()
     local servers = {}
     
-    -- Use the configured PlaceId to fetch servers for that specific place
+    -- Use the configured PlaceId
     local targetPlaceId = Config.PlaceId
     
     if not targetPlaceId or type(targetPlaceId) ~= "number" then
@@ -1276,10 +1276,29 @@ local function fetchRealServers()
         return servers
     end
     
+    -- Get Universe ID if not already cached
+    if not Config.UniverseId then
+        Config.UniverseId = getUniverseIdFromPlaceId(targetPlaceId)
+        if not Config.UniverseId then
+            -- Only show error notification once to avoid spam
+            if not Config.UniverseIdErrorShown then
+                createNotification("Error", "Failed to get Universe ID. Check Place ID.", 4)
+                Config.UniverseIdErrorShown = true
+            end
+            return servers
+        end
+    end
+    
+    -- Validate Universe ID is a number
+    if type(Config.UniverseId) ~= "number" then
+        warn("Invalid Universe ID type:", type(Config.UniverseId))
+        return servers
+    end
+    
     local success, result = pcall(function()
         local url = string.format(
             "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Desc&limit=100",
-            targetPlaceId
+            Config.UniverseId
         )
         return HttpService:GetAsync(url)
     end)
@@ -1289,7 +1308,7 @@ local function fetchRealServers()
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
                 -- Only include servers that match our target placeId
-                -- Skip servers without a placeId or with a different placeId
+                -- The API response includes placeId for each server
                 local serverPlaceId = serverData.placeId
                 if serverPlaceId and serverPlaceId == targetPlaceId then
                     table.insert(servers, {
