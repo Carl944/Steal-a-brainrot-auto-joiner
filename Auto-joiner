@@ -1228,14 +1228,13 @@ function joinServer(jobId, serverPlaceId)
 
     -- Validate serverPlaceId matches Config.PlaceId when UseServerPlaceId is enabled
     -- This ensures we never join a server for the wrong place
-    local targetPlaceId = Config.PlaceId
     if Config.UseServerPlaceId and serverPlaceId ~= Config.PlaceId then
         createNotification("Error", "Server placeId mismatch - refusing to join", 3)
         return
     end
     
     local success, err = pcall(function()
-        TeleportService:TeleportToPlaceInstance(targetPlaceId, jobId, LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(Config.PlaceId, jobId, LocalPlayer)
     end)
 
     if not success then
@@ -1305,8 +1304,7 @@ local function fetchRealServers()
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
                 -- Only add servers that match our specific PlaceId
-                -- The placeId field in the server data indicates which place the server is running
-                -- Skip servers that don't provide a placeId or don't match our target place
+                -- Servers without placeId are skipped by the first condition
                 if serverData.placeId and serverData.placeId == Config.PlaceId then
                     table.insert(servers, {
                         jobId = serverData.id,
