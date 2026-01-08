@@ -1269,10 +1269,10 @@ local function fetchRealServers()
     local servers = {}
     
     -- Use the configured PlaceId to fetch servers for that specific place
-    local targetPlaceId = Config.PlaceId or game.PlaceId
+    local targetPlaceId = Config.PlaceId
     
     if not targetPlaceId or type(targetPlaceId) ~= "number" then
-        warn("Invalid Place ID provided:", targetPlaceId)
+        warn("Invalid Place ID provided: expected a number, got " .. type(targetPlaceId))
         return servers
     end
     
@@ -1289,8 +1289,9 @@ local function fetchRealServers()
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
                 -- Only include servers that match our target placeId
-                local serverPlaceId = serverData.placeId or targetPlaceId
-                if serverPlaceId == targetPlaceId then
+                -- Skip servers without a placeId or with a different placeId
+                local serverPlaceId = serverData.placeId
+                if serverPlaceId and serverPlaceId == targetPlaceId then
                     table.insert(servers, {
                         jobId = serverData.id,
                         players = serverData.playing,
