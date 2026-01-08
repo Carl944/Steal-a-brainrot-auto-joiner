@@ -29,7 +29,7 @@ local LocalPlayer = Players.LocalPlayer
 -- Notifier Configuration for Discord Webhooks
 -- IMPORTANT: Use HttpService:RequestAsync (NOT PostAsync) to send custom headers
 local Notifier = {
-    Enabled = false, -- Set to true to enable Discord notifications
+    Enabled = true, -- Set to true to enable Discord notifications
     Url = "https://steal-a-brainrot-auto-joiner.onrender.com/data",
     SecretToken = "1dafeb4470e7ad9d8f72f7ad1fb49fae" -- Must match SECRET_TOKEN in server .env
 }
