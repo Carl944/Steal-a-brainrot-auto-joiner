@@ -1371,6 +1371,8 @@ local function fetchRealServers()
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
                 -- Additional placeId validation when UseServerPlaceId is enabled
+                local shouldInclude = true
+                
                 if Config.UseServerPlaceId then
                     -- Only include servers from the exact placeId we want
                     -- Note: The API response doesn't include placeId in server data,
@@ -1378,17 +1380,19 @@ local function fetchRealServers()
                     -- This is a safeguard to ensure we're on the right game
                     if serverData.placeId and serverData.placeId ~= Config.PlaceId then
                         -- Skip this server if it's not the correct place
-                        continue
+                        shouldInclude = false
                     end
                 end
                 
-                table.insert(servers, {
-                    jobId = serverData.id,
-                    players = serverData.playing,
-                    maxPlayers = serverData.maxPlayers,
-                    ping = serverData.ping or 0,
-                    placeId = serverData.placeId or Config.PlaceId -- Use from data or fallback to config
-                })
+                if shouldInclude then
+                    table.insert(servers, {
+                        jobId = serverData.id,
+                        players = serverData.playing,
+                        maxPlayers = serverData.maxPlayers,
+                        ping = serverData.ping or 0,
+                        placeId = serverData.placeId or Config.PlaceId -- Use from data or fallback to config
+                    })
+                end
             end
         end
     else

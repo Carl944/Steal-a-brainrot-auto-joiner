@@ -5,8 +5,8 @@ const app = express();
 app.use(express.json());
 
 // Environment variables for production deployment (Render)
-const WEBHOOK_LOW = process.env.WEBHOOK_LOW || "https://discord.com/api/webhooks/1458754029818744833/aM98FXJ9Yksoo1FNamrLJfOhXT2Eefcfw2tvA36m-OM1G3SmbQl4Urid185Tu2S-xzSV";   // 1–10 millones
-const WEBHOOK_HIGH = process.env.WEBHOOK_HIGH || "https://discord.com/api/webhooks/1458754235884765267/HwFdHLzFSNGjnrSCIOD3XkE66BtV3NjO90rLLgedRXmULZ2l6YNcAI2PVYUaWAlW7I3V";  // >10 millones
+const WEBHOOK_LOW = process.env.WEBHOOK_LOW || "";   // 1–10 millones
+const WEBHOOK_HIGH = process.env.WEBHOOK_HIGH || "";  // >10 millones
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
