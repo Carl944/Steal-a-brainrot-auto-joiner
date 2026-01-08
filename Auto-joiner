@@ -32,6 +32,7 @@ local Config = {
     Enabled = false,
     ScanInterval = 30, -- seconds between server scans
     PlaceId = 109983668079237, -- Official Sammy's Steal a Brainrot (Place ID for teleporting)
+    UseServerPlaceId = true, -- Use the server's placeId when teleporting
     UniverseId = nil, -- Will be fetched automatically from Place ID
     UniverseIdErrorShown = false, -- Track if error notification was shown
     MaxServersToScan = 50,
@@ -1213,7 +1214,7 @@ local function updateServerListDisplay()
         joinCorner.Parent = joinButton
 
         joinButton.MouseButton1Click:Connect(function()
-            joinServer(server.jobId)
+            joinServer(server.jobId, server.placeId)
         end)
     end
 
@@ -1222,11 +1223,14 @@ local function updateServerListDisplay()
 end
 
 -- Join Server Function
-function joinServer(jobId)
+function joinServer(jobId, serverPlaceId)
     createNotification("Auto-Joiner", "Attempting to join server...", 3)
 
+    -- Use server's placeId if UseServerPlaceId is enabled and serverPlaceId is provided
+    local targetPlaceId = (Config.UseServerPlaceId and serverPlaceId) or Config.PlaceId
+
     local success, err = pcall(function()
-        TeleportService:TeleportToPlaceInstance(Config.PlaceId, jobId, LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(targetPlaceId, jobId, LocalPlayer)
     end)
 
     if not success then
@@ -1264,29 +1268,18 @@ end
 local function fetchRealServers()
     local servers = {}
     
-    -- Get Universe ID if not already cached
-    if not Config.UniverseId then
-        Config.UniverseId = getUniverseIdFromPlaceId(Config.PlaceId)
-        if not Config.UniverseId then
-            -- Only show error notification once to avoid spam
-            if not Config.UniverseIdErrorShown then
-                createNotification("Error", "Failed to get Universe ID. Check Place ID.", 4)
-                Config.UniverseIdErrorShown = true
-            end
-            return servers
-        end
-    end
+    -- Use the configured PlaceId to fetch servers for that specific place
+    local targetPlaceId = Config.PlaceId or game.PlaceId
     
-    -- Validate Universe ID is a number
-    if type(Config.UniverseId) ~= "number" then
-        warn("Invalid Universe ID type:", type(Config.UniverseId))
+    if not targetPlaceId or type(targetPlaceId) ~= "number" then
+        warn("Invalid Place ID provided:", targetPlaceId)
         return servers
     end
     
     local success, result = pcall(function()
         local url = string.format(
             "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Desc&limit=100",
-            Config.UniverseId
+            targetPlaceId
         )
         return HttpService:GetAsync(url)
     end)
@@ -1295,12 +1288,17 @@ local function fetchRealServers()
         local decoded = HttpService:JSONDecode(result)
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
-                table.insert(servers, {
-                    jobId = serverData.id,
-                    players = serverData.playing,
-                    maxPlayers = serverData.maxPlayers,
-                    ping = serverData.ping or 0
-                })
+                -- Only include servers that match our target placeId
+                local serverPlaceId = serverData.placeId or targetPlaceId
+                if serverPlaceId == targetPlaceId then
+                    table.insert(servers, {
+                        jobId = serverData.id,
+                        players = serverData.playing,
+                        maxPlayers = serverData.maxPlayers,
+                        ping = serverData.ping or 0,
+                        placeId = serverPlaceId -- Store the placeId for later use
+                    })
+                end
             end
         end
     else
@@ -1434,7 +1432,8 @@ local function scanServers()
                     players = fakePlayers,
                     maxPlayers = 12,
                     isPublic = isPublic,
-                    brainrots = serverBrainrots
+                    brainrots = serverBrainrots,
+                    placeId = Config.PlaceId -- Add placeId to fallback data
                 }
             end
 
@@ -1462,7 +1461,7 @@ local function scanServers()
             local brainrotInfo = #bestServer.brainrots > 0 and " with " .. table.concat(bestServer.brainrots, ", ") or ""
             createNotification("Auto-Joiner", "Found server: " .. formatNumber(bestServer.income) .. "/s" .. brainrotInfo, 4)
             task.wait(2)
-            joinServer(bestServer.jobId)
+            joinServer(bestServer.jobId, bestServer.placeId)
         end
 
         IsScanning = false
