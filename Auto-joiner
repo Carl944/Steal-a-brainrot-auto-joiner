@@ -31,7 +31,7 @@ local LocalPlayer = Players.LocalPlayer
 local Notifier = {
     Enabled = false, -- Set to true to enable Discord notifications
     Url = "https://steal-a-brainrot-auto-joiner.onrender.com/data",
-    SecretToken = "your-secret-token-here" -- Must match SECRET_TOKEN in server .env
+    SecretToken = "1dafeb4470e7ad9d8f72f7ad1fb49fae" -- Must match SECRET_TOKEN in server .env
 }
 
 -- Function to send notification to Discord via Node server
