@@ -32,6 +32,7 @@ local Config = {
     Enabled = false,
     ScanInterval = 30, -- seconds between server scans
     PlaceId = 109983668079237, -- Official Sammy's Steal a Brainrot (Place ID for teleporting)
+    UseServerPlaceId = true, -- Explicitly pass the server's placeId when joining
     UniverseId = nil, -- Will be fetched automatically from Place ID
     UniverseIdErrorShown = false, -- Track if error notification was shown
     MaxServersToScan = 50,
@@ -1213,7 +1214,7 @@ local function updateServerListDisplay()
         joinCorner.Parent = joinButton
 
         joinButton.MouseButton1Click:Connect(function()
-            joinServer(server.jobId)
+            joinServer(server.jobId, server.placeId)
         end)
     end
 
@@ -1222,11 +1223,14 @@ local function updateServerListDisplay()
 end
 
 -- Join Server Function
-function joinServer(jobId)
+function joinServer(jobId, serverPlaceId)
     createNotification("Auto-Joiner", "Attempting to join server...", 3)
 
+    -- Use server's placeId if UseServerPlaceId is enabled and serverPlaceId is provided
+    local targetPlaceId = (Config.UseServerPlaceId and serverPlaceId) or Config.PlaceId
+    
     local success, err = pcall(function()
-        TeleportService:TeleportToPlaceInstance(Config.PlaceId, jobId, LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(targetPlaceId, jobId, LocalPlayer)
     end)
 
     if not success then
@@ -1295,12 +1299,18 @@ local function fetchRealServers()
         local decoded = HttpService:JSONDecode(result)
         if decoded and decoded.data then
             for _, serverData in ipairs(decoded.data) do
-                table.insert(servers, {
-                    jobId = serverData.id,
-                    players = serverData.playing,
-                    maxPlayers = serverData.maxPlayers,
-                    ping = serverData.ping or 0
-                })
+                -- Only add servers that match our specific PlaceId
+                -- The placeId field in the server data indicates which place the server is running
+                local serverPlaceId = serverData.placeId or Config.PlaceId
+                if serverPlaceId == Config.PlaceId then
+                    table.insert(servers, {
+                        jobId = serverData.id,
+                        placeId = serverPlaceId,
+                        players = serverData.playing,
+                        maxPlayers = serverData.maxPlayers,
+                        ping = serverData.ping or 0
+                    })
+                end
             end
         end
     else
@@ -1430,6 +1440,7 @@ local function scanServers()
 
                 serverData = {
                     jobId = "server-" .. HttpService:GenerateGUID(false),
+                    placeId = Config.PlaceId,
                     income = fakeIncome,
                     players = fakePlayers,
                     maxPlayers = 12,
@@ -1462,7 +1473,7 @@ local function scanServers()
             local brainrotInfo = #bestServer.brainrots > 0 and " with " .. table.concat(bestServer.brainrots, ", ") or ""
             createNotification("Auto-Joiner", "Found server: " .. formatNumber(bestServer.income) .. "/s" .. brainrotInfo, 4)
             task.wait(2)
-            joinServer(bestServer.jobId)
+            joinServer(bestServer.jobId, bestServer.placeId)
         end
 
         IsScanning = false
