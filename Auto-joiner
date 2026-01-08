@@ -1229,7 +1229,8 @@ function joinServer(jobId, serverPlaceId)
     -- Validate serverPlaceId matches Config.PlaceId when UseServerPlaceId is enabled
     -- This ensures we never join a server for the wrong place
     if Config.UseServerPlaceId and serverPlaceId ~= Config.PlaceId then
-        createNotification("Error", "Server placeId mismatch - refusing to join", 3)
+        local errorMsg = string.format("PlaceId mismatch - expected %d, got %s", Config.PlaceId, tostring(serverPlaceId))
+        createNotification("Error", errorMsg, 5)
         return
     end
     
